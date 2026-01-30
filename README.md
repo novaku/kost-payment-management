@@ -59,35 +59,10 @@ Aplikasi web komprehensif untuk mengelola pembayaran kost (rumah sewa) yang diba
 
 > **Untuk shared hosting tanpa Node.js access**
 
-### 🎯 Gunakan Script Automated
+### ⚠️ Catatan Penting
+Script otomatis (cpanel-deploy.sh, deploy-tools.sh) saat ini tidak tersedia. Silakan gunakan metode manual di bawah ini.
 
-**2 script utama tersedia:**
 
-1. **`cpanel-deploy.sh`** - Suite lengkap untuk deployment cPanel
-2. **`deploy-tools.sh`** - Tools deployment dan maintenance
-
-```bash
-# Setup lengkap untuk cPanel
-./cpanel-deploy.sh
-
-# Tools deployment dan maintenance  
-./deploy-tools.sh
-```
-
-**cpanel-deploy.sh** menyediakan:
-- ✅ Complete Setup (konfigurasi lengkap)
-- ✅ Build Frontend (compile assets)
-- ✅ Create Package (buat deployment package)
-- ✅ Install to cPanel (proses instalasi)
-- ✅ Maintenance Tools (backup, logs, dll)
-
-**deploy-tools.sh** menyediakan:
-- ✅ Quick Deploy (deploy cepat)
-- ✅ Backup System (backup aplikasi & database)
-- ✅ Update Application (update otomatis)
-- ✅ Health Check (cek kesehatan aplikasi)
-- ✅ Database Tools (migration, seeder, dll)
-- ✅ Log Management (kelola log)
 
 ### Manual cPanel Setup
 
@@ -143,13 +118,14 @@ Script ini akan melakukan:
 3. Membuka aplikasi di browser default Anda secara otomatis.
 
 ### Setup Manual
-### Prerequisites
+
+#### Prerequisites
 - **PHP 8.1+**
 - **Node.js 16+**
 - **MySQL 5.7+**
 - **Composer**
 
-### Setup
+#### Langkah-langkah
 
 1. **Clone & Install**
 ```bash
@@ -167,15 +143,11 @@ php artisan key:generate
 
 2. **Database Setup**
 ```bash
-# Create database
-mysql -u root -p
-CREATE DATABASE kost_payment;
-exit
-
-# Update .env
-DB_DATABASE=kost_payment
-DB_USERNAME=root
-DB_PASSWORD=your_password
+# Pastikan database 'kost_payment' sudah dibuat di MySQL Anda
+# Update .env dengan credentials database Anda:
+# DB_DATABASE=kost_payment
+# DB_USERNAME=root
+# DB_PASSWORD=your_password
 
 # Run migrations
 php artisan migrate --seed
@@ -190,9 +162,9 @@ npm run build
 php artisan serve
 ```
 
-**Access:** http://localhost:8000
+**Akses:** http://localhost:8000
 
-**Default Login (Local):**
+**Default Login:**
 - **Owner**: owner@kost.com / password
 - **Tenant**: tenant@kost.com / password
 
@@ -216,8 +188,7 @@ kost-payment/
 │   └── resources/css/      # Styles
 ├── 📂 public/              # Web Assets
 ├── 📂 storage/             # File Storage
-├── setup-cpanel.sh         # cPanel Setup Wizard
-├── install-cpanel.sh       # cPanel Installer
+├── 📂 storage/             # File Storage
 └── DEPLOYMENT.md           # Deployment Guide
 ```
 
@@ -346,7 +317,7 @@ composer install --optimize-autoloader --no-dev
 
 ## 📞 Support & Documentation
 
-- **🚀 Quick Setup**: Gunakan `./setup-cpanel.sh` untuk guided installation
+- **🚀 Quick Setup**: Ikuti langkah-langkah di bagian instalasi
 - **📖 Deployment Guide**: Lihat `DEPLOYMENT.md` untuk setup detail
 - **🐛 Issues**: Check troubleshooting section di atas
 - **📊 Performance**: Monitor via `check-performance.php` (cPanel)
@@ -365,56 +336,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**💡 Tip**: Untuk setup cPanel yang mudah, gunakan wizard: `./setup-cpanel.sh`
-   ```bash
-   # Download project files
-   # Upload to public_html directory
-   ```
+**💡 Tip**: Pastikan database sudah terkonfigurasi dengan benar di `.env` sebelum menjalankan migrasi.
 
-2. **Database Setup**
-   ```sql
-   # Import database/database.sql via phpMyAdmin
-   ```
 
-3. **Configuration**
-   ```bash
-   # Edit .env file
-   chmod +x install.sh
-   ./install.sh
-   ```
-
-4. **Access Application**
-   ```
-   https://yourdomain.com
-   ```
-
-### Method 2: Local Development
-
-```bash
-# Clone repository
-git clone <repository-url>
-cd kost-payment
-
-# Install PHP dependencies
-composer install
-
-# Install Node.js dependencies
-npm install
-
-# Environment setup
-cp .env.example .env
-php artisan key:generate
-
-# Database setup
-php artisan migrate
-php artisan db:seed
-
-# Build assets
-npm run build
-
-# Serve application
-php artisan serve
-```
 
 ## ⚙️ Environment Configuration
 
@@ -503,7 +427,7 @@ kost-payment/
 ├── 📄 .env                     # Environment config
 ├── 📄 composer.json            # PHP dependencies
 ├── 📄 package.json             # Node.js dependencies
-├── 📄 install.sh               # Installation script
+├── 📄 package.json             # Node.js dependencies
 └── 📄 DEPLOYMENT.md            # Deployment guide
 ```
 
