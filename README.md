@@ -128,6 +128,21 @@ chmod -R 775 storage bootstrap/cache
 
 ## 💻 Local Development
 
+### 🚀 Setup Satu Perintah (Quick Start)
+
+Untuk memulai dengan cepat, Anda dapat menggunakan script `run_local.sh` untuk melakukan build dan menjalankan aplikasi secara otomatis:
+
+```bash
+chmod +x run_local.sh
+./run_local.sh
+```
+
+Script ini akan melakukan:
+1. Build aset frontend.
+2. Menjalankan server development Laravel.
+3. Membuka aplikasi di browser default Anda secara otomatis.
+
+### Setup Manual
 ### Prerequisites
 - **PHP 8.1+**
 - **Node.js 16+**

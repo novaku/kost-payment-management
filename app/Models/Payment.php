@@ -2,164 +2,78 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Payment extends Model
 {
-    use HasFactory;
+    use SoftDeletes;
 
     protected $fillable = [
+        'payment_code',
         'tenant_id',
-        'kost_location_id',
-        'assignment_id',
+        'room_id',
+        'payment_for_month',
         'amount',
-        'payment_date',
-        'payment_month',
-        'payment_year',
-        'payment_proof',
+        'late_fee',
+        'total_amount',
+        'payment_method',
+        'bank_name',
+        'proof_of_payment',
         'status',
         'notes',
-        'verified_at',
+        'rejection_reason',
+        'due_date',
+        'paid_date',
         'verified_by',
-        'is_late',
-        'days_late',
+        'verified_at',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
-        'payment_date' => 'date',
+        'late_fee' => 'decimal:2',
+        'total_amount' => 'decimal:2',
+        'payment_for_month' => 'date',
+        'due_date' => 'date',
+        'paid_date' => 'date',
         'verified_at' => 'datetime',
-        'is_late' => 'boolean',
     ];
 
-    /**
-     * Get the tenant who made this payment
-     */
+    // Relationships
     public function tenant()
     {
-        return $this->belongsTo(User::class, 'tenant_id');
+        return $this->belongsTo(Tenant::class);
     }
 
-    /**
-     * Get the kost location for this payment
-     */
-    public function kostLocation()
+    public function room()
     {
-        return $this->belongsTo(KostLocation::class);
+        return $this->belongsTo(Room::class);
     }
 
-    /**
-     * Get the assignment for this payment
-     */
-    public function assignment()
-    {
-        return $this->belongsTo(TenantKostAssignment::class, 'assignment_id');
-    }
-
-    /**
-     * Get the user who verified this payment
-     */
     public function verifiedBy()
     {
         return $this->belongsTo(User::class, 'verified_by');
     }
 
-    /**
-     * Check if payment is pending
-     */
-    public function isPending()
-    {
-        return $this->status === 'pending';
-    }
-
-    /**
-     * Check if payment is verified
-     */
-    public function isVerified()
-    {
-        return $this->status === 'verified';
-    }
-
-    /**
-     * Check if payment is rejected
-     */
-    public function isRejected()
-    {
-        return $this->status === 'rejected';
-    }
-
-    /**
-     * Mark payment as verified
-     */
-    public function markAsVerified($verifiedBy)
-    {
-        $this->update([
-            'status' => 'verified',
-            'verified_at' => now(),
-            'verified_by' => $verifiedBy,
-        ]);
-    }
-
-    /**
-     * Mark payment as rejected
-     */
-    public function markAsRejected($verifiedBy, $notes = null)
-    {
-        $this->update([
-            'status' => 'rejected',
-            'verified_at' => now(),
-            'verified_by' => $verifiedBy,
-            'notes' => $notes,
-        ]);
-    }
-
-    /**
-     * Calculate if payment is late and days late
-     */
-    public function calculateLateness()
-    {
-        $dueDate = Carbon::create($this->payment_year, $this->payment_month, 5);
-        $paymentDate = $this->payment_date;
-
-        if ($paymentDate->isAfter($dueDate)) {
-            $this->update([
-                'is_late' => true,
-                'days_late' => $paymentDate->diffInDays($dueDate),
-            ]);
-        }
-    }
-
-    /**
-     * Scope for verified payments
-     */
-    public function scopeVerified($query)
-    {
-        return $query->where('status', 'verified');
-    }
-
-    /**
-     * Scope for pending payments
-     */
+    // Scopes
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
     }
 
-    /**
-     * Scope for rejected payments
-     */
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'approved');
+    }
+
     public function scopeRejected($query)
     {
         return $query->where('status', 'rejected');
     }
 
-    /**
-     * Scope for late payments
-     */
-    public function scopeLate($query)
+    public function scopeOverdue($query)
     {
-        return $query->where('is_late', true);
+        return $query->where('status', 'pending')
+                     ->where('due_date', '<', now());
     }
 }

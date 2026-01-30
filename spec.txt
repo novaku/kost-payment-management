@@ -1,0 +1,321 @@
+Spesifikasi Lengkap Aplikasi Manajemen Pembayaran Kosan
+1. OVERVIEW SISTEM
+1.1 Deskripsi Aplikasi
+Aplikasi web untuk manajemen pembayaran kosan yang memfasilitasi transaksi antara penghuni dan pengelola, dilengkapi sistem pelaporan dan monitoring keterlambatan pembayaran.
+1.2 Tech Stack
+
+Backend: Laravel 12.x
+Frontend: React 18.x
+Database: MySQL 8.0+
+Cache: Redis 7.x
+Deployment: cPanel
+Web Server: Apache/LiteSpeed (cPanel default)
+
+
+## 4. FITUR & FUNCTIONAL REQUIREMENTS
+
+### 4.1 Autentikasi & Otorisasi
+- **Login/Logout** menggunakan Laravel Sanctum
+- **Role-based Access Control (RBAC)**:
+  - **Admin**: Full access
+  - **Pengelola**: Manage tenants, verify payments, view reports
+  - **Penghuni**: Submit payments, view payment history
+- **Password Reset** via email
+- **Email Verification**
+
+### 4.2 Manajemen User
+- CRUD user (Admin only)
+- Profile management
+- Change password
+- Activity logging
+
+### 4.3 Manajemen Kamar
+- CRUD kamar kosan
+- Set harga sewa per bulan
+- Status kamar (tersedia/terisi/maintenance)
+- Upload foto kamar (optional)
+
+### 4.4 Manajemen Penghuni
+- Registrasi penghuni baru
+- Assignment kamar
+- Upload KTP/identitas
+- Data kontak darurat
+- Deposit management
+- History perpindahan kamar
+- Terminate tenant
+
+### 4.5 Pembayaran
+
+#### 4.5.1 Submit Pembayaran (Penghuni)
+- Form input pembayaran:
+  - Bulan pembayaran
+  - Metode pembayaran
+  - Bank tujuan
+  - Upload bukti transfer (screenshot)
+- Auto-generate kode pembayaran
+- Notifikasi submit berhasil
+
+#### 4.5.2 Verifikasi Pembayaran (Pengelola)
+- List pembayaran pending
+- Preview bukti transfer
+- Approve/Reject pembayaran
+- Input alasan penolakan
+- Notifikasi ke penghuni
+
+#### 4.5.3 Kalkulasi Denda
+- Auto-calculate denda keterlambatan
+- Konfigurasi denda per hari/tetap
+- Display total pembayaran + denda
+
+### 4.6 Laporan
+
+#### 4.6.1 Laporan Pembayaran
+- Filter by:
+  - Periode (bulan/tahun)
+  - Status pembayaran
+  - Kamar/Penghuni
+- Export ke Excel/PDF
+- Summary:
+  - Total pembayaran masuk
+  - Total denda
+  - Pembayaran pending
+
+#### 4.6.2 Laporan Keterlambatan
+- List penghuni telat bayar
+- Jumlah hari keterlambatan
+- Total denda
+- History keterlambatan per penghuni
+- Export laporan
+
+#### 4.6.3 Laporan Keuangan
+- Income per bulan
+- Occupancy rate
+- Projection income
+- Outstanding payments
+
+### 4.7 Dashboard
+
+#### 4.7.1 Dashboard Pengelola
+- Summary cards:
+  - Total penghuni aktif
+  - Pembayaran bulan ini
+  - Pending verification
+  - Overdue payments
+- Chart: Trend pembayaran 6 bulan terakhir
+- List terbaru: Recent payments, late payments
+
+#### 4.7.2 Dashboard Penghuni
+- Status pembayaran bulan ini
+- History pembayaran
+- Upcoming due date
+- Quick submit payment
+
+### 4.8 Notifikasi & Reminder
+- Email reminder H-7 sebelum jatuh tempo
+- Email reminder H-0 (hari jatuh tempo)
+- Email reminder keterlambatan (H+3, H+7)
+- In-app notification
+- WhatsApp notification (optional - integration)
+
+### 4.9 Pengaturan Sistem
+- Konfigurasi tanggal jatuh tempo
+- Konfigurasi denda keterlambatan
+- Konfigurasi email templates
+- Backup & restore
+
+---
+
+## 5. BACKEND SPECIFICATION (Laravel 12.x)
+
+5.2 Key Features Implementation
+5.2.1 Authentication (Laravel Sanctum)
+php// routes/api.php
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+});
+5.2.2 Payment Flow
+php// PaymentService.php
+- submitPayment()
+- verifyPayment()
+- rejectPayment()
+- calculateLateFee()
+- generatePaymentCode()
+5.2.3 File Upload
+
+Validation: max 5MB, jpg|jpeg|png
+Store di storage/app/public/payments/
+Generate unique filename
+Create thumbnail (optional)
+
+5.2.4 Scheduled Tasks (Console/Kernel.php)
+phpprotected function schedule(Schedule $schedule)
+{
+    // Check overdue setiap hari jam 00:01
+    $schedule->command('payments:check-overdue')
+             ->dailyAt('00:01');
+    
+    // Kirim reminder H-7 setiap hari jam 08:00
+    $schedule->command('payments:send-reminders')
+             ->dailyAt('08:00');
+}
+```
+
+5.4 Redis Caching Strategy
+php// Cache configuration keys
+- dashboard_stats_{user_id} (TTL: 300s)
+- rooms_available (TTL: 600s)
+- payment_summary_{month} (TTL: 3600s)
+- tenant_list_active (TTL: 600s)
+
+// Cache pada queries berat
+- Statistics dashboard
+- Report summaries
+- Room availability
+5.5 Validation Rules
+Payment Submission
+php'payment_for_month' => 'required|date_format:Y-m-d',
+'amount' => 'required|numeric|min:0',
+'payment_method' => 'required|in:transfer,cash,e-wallet',
+'proof_of_payment' => 'required|file|mimes:jpg,jpeg,png|max:5120',
+'notes' => 'nullable|string|max:500'
+5.6 Environment Variables (.env)
+envAPP_NAME="Kosan Payment App"
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://yourdomain.com
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=kosan_payment
+DB_USERNAME=root
+DB_PASSWORD=root
+
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@yourdomain.com
+
+SANCTUM_STATEFUL_DOMAINS=yourdomain.com
+SESSION_DRIVER=redis
+CACHE_DRIVER=redis
+QUEUE_CONNECTION=redis
+```
+
+---
+
+## 6. FRONTEND SPECIFICATION (React)
+
+
+6.2 Tech Stack Frontend
+json{
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "axios": "^1.6.0",
+    "tailwindcss": "^3.3.0",
+    "react-hot-toast": "^2.4.1",
+    "react-icons": "^4.12.0",
+    "chart.js": "^4.4.0",
+    "react-chartjs-2": "^5.2.0",
+    "date-fns": "^2.30.0",
+    "react-dropzone": "^14.2.3",
+    "react-table": "^7.8.0",
+    "xlsx": "^0.18.5"
+  }
+}
+6.3 Key Features Implementation
+6.3.1 Authentication Flow
+jsx// AuthContext.jsx
+- Login handler
+- Logout handler
+- Token management (localStorage)
+- Protected routes
+- Auto refresh token
+6.3.2 Payment Submission
+jsx// PaymentForm.jsx
+- Form input bulan pembayaran
+- Upload file dengan preview
+- Validation client-side
+- Progress upload
+- Success/error notification
+6.3.3 File Upload Component
+jsx// UploadProof.jsx
+- Drag & drop support
+- Image preview before upload
+- File size validation
+- Format validation (jpg, jpeg, png)
+- Compress image (optional)
+6.3.4 Data Tables
+jsx// Features:
+- Sorting
+- Filtering
+- Pagination
+- Search
+- Export to Excel/PDF
+- Bulk actions (optional)
+6.4 Routing Structure
+jsx/                          → Redirect to dashboard based on role
+/login                     → Login page
+/forgot-password           → Forgot password
+
+/dashboard                 → Dashboard (role-based)
+
+/rooms                     → Room list
+/rooms/create              → Create room
+/rooms/:id/edit            → Edit room
+
+/tenants                   → Tenant list
+/tenants/create            → Create tenant
+/tenants/:id/edit          → Edit tenant
+/tenants/:id               → Tenant detail
+
+/payments                  → Payment list
+/payments/create           → Submit payment (penghuni)
+/payments/:id              → Payment detail
+/payments/verification     → Payment verification (pengelola)
+
+/reports/payments          → Payment report
+/reports/late-payments     → Late payment report
+/reports/financial         → Financial report
+
+/profile                   → User profile
+/settings                  → System settings (admin)
+```
+
+### 6.5 Responsive Design
+- Mobile-first approach
+- Breakpoints:
+  - Mobile: < 640px
+  - Tablet: 640px - 1024px
+  - Desktop: > 1024px
+- Hamburger menu untuk mobile
+- Touch-friendly buttons
+
+---
+
+## 7. DEPLOYMENT SPECIFICATION (cPanel)
+
+### 7.1 Server Requirements
+```
+PHP >= 8.2
+MySQL >= 8.0
+Redis >= 7.0
+Composer 2.x
+Laravel 12.x
+SSL Certificate (Let's Encrypt)
+```
+
+buatkan folder standar dari laravel dengan composer, jangan dipisah folder backend dan frontend, buatkan folder react untuk frontend berada di dalam folder standar laravel 

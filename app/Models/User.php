@@ -10,26 +10,27 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    /** @use HasFactory<\Database\Factories\UserFactory> */
+    use HasFactory, Notifiable, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
      *
-     * @var array<int, string>
+     * @var list<string>
      */
     protected $fillable = [
         'name',
         'email',
         'password',
-        'role',
+        'role_id',
         'phone',
-        'address',
+        'is_active',
     ];
 
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var array<int, string>
+     * @var list<string>
      */
     protected $hidden = [
         'password',
@@ -37,60 +38,63 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be cast.
+     * Get the attributes that should be cast.
      *
-     * @var array<string, string>
+     * @return array<string, string>
      */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-    ];
-
-    /**
-     * Check if user is owner
-     */
-    public function isOwner(): bool
+    protected function casts(): array
     {
-        return $this->role === 'owner';
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'is_active' => 'boolean',
+        ];
     }
 
-    /**
-     * Check if user is tenant
-     */
-    public function isTenant(): bool
+    // Relationships
+    public function role()
     {
-        return $this->role === 'tenant';
+        return $this->belongsTo(Role::class);
     }
 
-    /**
-     * Get kost locations owned by this user
-     */
-    public function ownedKostLocations()
+    public function tenant()
     {
-        return $this->hasMany(KostLocation::class, 'owner_id');
+        return $this->hasOne(Tenant::class);
     }
 
-    /**
-     * Get tenant assignments for this user
-     */
-    public function tenantAssignments()
+    public function notifications()
     {
-        return $this->hasMany(TenantKostAssignment::class, 'tenant_id');
+        return $this->hasMany(Notification::class);
     }
 
-    /**
-     * Get payments made by this user
-     */
-    public function payments()
+    public function activityLogs()
     {
-        return $this->hasMany(Payment::class, 'tenant_id');
+        return $this->hasMany(ActivityLog::class);
     }
 
-    /**
-     * Get payments verified by this user
-     */
     public function verifiedPayments()
     {
         return $this->hasMany(Payment::class, 'verified_by');
+    }
+
+    // Helper methods
+    public function hasRole($role)
+    {
+        return $this->role->name === $role;
+    }
+
+    public function isAdmin()
+    {
+        return $this->hasRole('admin');
+    }
+
+    public function isPengelola()
+    {
+        return $this->hasRole('pengelola');
+    }
+
+    public function isPenghuni()
+    {
+        return $this->hasRole('penghuni');
     }
 }
